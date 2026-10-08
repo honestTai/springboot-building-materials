@@ -1,0 +1,36 @@
+@startuml
+actor User
+participant Controller
+participant Service
+participant AccountDao
+participant Database
+participant Result
+
+User -> Controller: POST /updateAccountRight?userId=123&checkedValue=[1,2,3]
+activate Controller
+
+Controller -> Service: updateAccountRight(userId, checkedValue)
+activate Service
+
+Service -> AccountDao: deleteAccountRight(userId)
+activate AccountDao
+AccountDao -> Database: DELETE FROM account_right WHERE userId = userId
+activate Database
+Database --> AccountDao
+deactivate Database
+AccountDao --> Service
+
+Service -> AccountDao: insertAccountRight(checkedValue, userId)
+AccountDao -> Database: INSERT INTO account_right VALUES (checkedValue[i], userId) FOR i=0 to checkedValue.length
+activate Database
+Database --> AccountDao
+deactivate Database
+AccountDao --> Service
+
+Service -> Result: new Result("1001", "授权成功")
+deactivate Service
+Result --> Controller
+Controller --> User: Result("1001", "授权成功")
+
+deactivate Controller
+@enduml

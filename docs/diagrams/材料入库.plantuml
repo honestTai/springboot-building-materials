@@ -1,0 +1,61 @@
+@startuml
+actor User
+participant Controller
+participant Service
+participant PurchasePlanDao
+participant MaterialStockDao
+participant Result
+
+User -> Controller: POST /putInStock
+activate Controller
+
+Controller -> Service: donePurchasePlan(purchasePlanId)
+activate Service
+
+Service -> PurchasePlanDao: updateStateOver(id)
+activate PurchasePlanDao
+PurchasePlanDao --> Service: count
+deactivate PurchasePlanDao
+
+alt count < 1
+    Service -> Result: new Result("2001", "材料入库失败")
+    activate Result
+    Result --> Service
+    deactivate Result
+else
+    Service -> PurchasePlanDao: queryPurchasePlanById(id)
+    activate PurchasePlanDao
+    PurchasePlanDao --> Service: purchasePlan
+    deactivate PurchasePlanDao
+
+    alt purchasePlan == null
+        Service -> Result: new Result("2001", "材料入库失败")
+        activate Result
+        Result --> Service
+        deactivate Result
+    else
+        Service -> MaterialStockDao: addMaterialQuantity(purchasePlan.getMaterialId(), purchasePlan.getPurchaseQuantity())
+        activate MaterialStockDao
+        MaterialStockDao --> Service: addCount
+        deactivate MaterialStockDao
+
+        alt addCount == 1
+            Service -> Result: new Result("1001", "材料入库成功")
+            activate Result
+            Result --> Service
+            deactivate Result
+        else
+            Service -> Result: new Result("2001", "材料入库失败")
+            activate Result
+            Result --> Service
+            deactivate Result
+        end
+    end
+end
+
+Service --> Controller: Result
+deactivate Service
+
+Controller --> User: Result
+deactivate Controller
+@enduml

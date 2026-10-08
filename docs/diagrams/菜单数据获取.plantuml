@@ -1,0 +1,28 @@
+@startuml
+actor Client as "User"
+participant Controller
+participant Service
+participant Database
+
+User -> Controller: GET /getAccountRight?userId=123
+activate Controller
+
+Controller -> Service: queryAllNavigation()
+activate Service
+
+Service -> Database: SELECT * FROM navigation
+activate Database
+Database --> Service: Navigation data
+deactivate Database
+
+Service -> Service: queryRightByUserId(123)
+Service -> Database: SELECT * FROM right WHERE userId = 123
+activate Database
+Database --> Service: Right data
+deactivate Database
+Service --> Controller: navigationList, rightList
+deactivate Service
+
+Controller -> Client: Result("1001", "查询成功", map)
+deactivate Controller
+@enduml

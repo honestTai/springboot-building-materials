@@ -1,0 +1,44 @@
+@startuml
+actor User
+participant Controller
+participant Service
+participant MaterialStockDao
+participant UuidTools
+participant Result
+
+User -> Controller: POST /addMaterial
+activate Controller
+
+Controller -> Service: addMaterial(materialStock)
+activate Service
+
+Service -> MaterialStockDao: checkMaterialDup(materialName, norm, materialQuality, id)
+activate MaterialStockDao
+MaterialStockDao --> Service: duplicateCount
+deactivate MaterialStockDao
+
+alt duplicateCount == 0
+    Service -> MaterialStockDao: insertMaterial(materialStock)
+    MaterialStockDao --> Service: insertResult
+    deactivate MaterialStockDao
+
+    alt insertResult == 1
+        Service -> Result: new Result("1001", "新增成功")
+        Result --> Service
+        deactivate Result
+    else
+        Service -> Result: new Result("2001", "新增失败")
+        Result --> Service
+        deactivate Result
+    end
+else
+    Service -> Result: new Result("2001", "该种材料已存在")
+    Result --> Service
+    deactivate Result
+end
+
+Service --> Controller: Result("1001"/"2001", "新增成功"/"新增失败"/"该种材料已存在")
+deactivate Service
+Controller --> User: Result("1001"/"2001", "新增成功"/"新增失败"/"该种材料已存在")
+deactivate Controller
+@enduml

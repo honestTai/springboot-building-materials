@@ -1,0 +1,61 @@
+@startuml
+actor User
+participant Controller
+participant Service
+participant MaterialStockDao
+participant SiteInformationDao
+participant Result
+
+User -> Controller: POST /addUsage
+activate Controller
+
+Controller -> Service: addUsage(siteId, materialId, putQuantity)
+activate Service
+
+Service -> MaterialStockDao: queryQuantityById(materialId)
+activate MaterialStockDao
+MaterialStockDao --> Service: stockQuantity
+deactivate MaterialStockDao
+
+alt putQuantity > stockQuantity
+    Service -> Result: new Result("2001", "该材料库存中只有"+stockQuantity)
+    activate Result
+    Result --> Service
+    deactivate Result
+else
+    Service -> SiteInformationDao: addUsageForSite(siteId, materialId, putQuantity)
+    activate SiteInformationDao
+    SiteInformationDao --> Service: addUsageResult
+    deactivate SiteInformationDao
+
+    alt addUsageResult == 1
+        Service -> MaterialStockDao: addMaterialQuantity(materialId, 0-putQuantity)
+        activate MaterialStockDao
+        MaterialStockDao --> Service: addMaterialResult
+        deactivate MaterialStockDao
+
+        alt addMaterialResult == 1
+            Service -> Result: new Result("1001", "投入材料成功")
+            activate Result
+            Result --> Service
+            deactivate Result
+        else
+            Service -> Result: new Result("2001", "投入材料失败")
+            activate Result
+            Result --> Service
+            deactivate Result
+        end
+    else
+        Service -> Result: new Result("2001", "投入材料失败")
+        activate Result
+        Result --> Service
+        deactivate Result
+    end
+end
+
+Service --> Controller: Result
+deactivate Service
+
+Controller --> User: Result
+deactivate Controller
+@enduml

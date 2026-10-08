@@ -1,0 +1,65 @@
+server:
+  port: 18288
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/build?useUnicode=true&characterEncoding=UTF-8&useSSL=false
+    username: build
+    password: CHANGE_ME_BEFORE_RUNNING
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.jdbc.Driver
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        service: ${spring.application.name}
+    gateway:
+      filter:
+        remove-hop-by-hop:
+          headers:
+            # 以下是去掉网关默认去掉的请求响应头
+            - trailer
+            - te
+            - keep-alive
+            - transfer-encoding
+            - upgrade
+            - proxy-authenticate
+            - connection
+            - proxy-authorization
+            - x-application-context
+            # 以下是去掉服务层面定义的跨域
+            - access-control-allow-credentials
+            - access-control-allow-headers
+            - access-control-allow-methods
+            - access-control-allow-origin
+            - access-control-max-age
+            - vary
+      globalcors:
+        add-to-simple-url-handler-mapping: true # 解决options请求被拦截问题
+        corsConfigurations:
+          '[/**]':
+            allowCredentials: true
+            allowedOrigins: "*"
+            allowedHeaders: "*"
+            allowedMethods: "*"
+            maxAge: 3628800
+      discovery:
+        locator:
+          enabled: true    # 是否开启负载均衡策略
+      routes:
+        - id: userRoute
+          uri: lb://user-app
+          predicates:
+            - Path=/user/**
+          filters:
+            - RewritePath=/user/(?<segment>.*), /$\{segment}
+        - id: backRoute
+          uri: lb://back-app
+          predicates:
+            - Path=/back/**
+          filters:
+            - RewritePath=/back/(?<segment>.*), /$\{segment}
+feign:
+  hystrix:
+    enabled: true

@@ -1,0 +1,32 @@
+@startuml
+actor User
+participant Controller
+participant Service
+participant SiteInformationDao
+participant Result
+
+User -> Controller: GET /getUsage
+activate Controller
+Controller -> Service: querySiteMaterialUsage(siteId, materialName, type, pageIndex, pageSize)
+activate Service
+alt type != null
+    Service -> SiteInformationDao: querySiteUsageById(siteId, materialName, startPercent, endPercent, (pageIndex-1)*pageSize, pageSize)
+    activate SiteInformationDao
+    SiteInformationDao --> Service: list
+    Service -> SiteInformationDao: querySiteUsageByIdCount(siteId, materialName, startPercent, endPercent)
+    SiteInformationDao --> Service: total
+    deactivate SiteInformationDao
+    Service --> Controller: Result("1001", "查询成功", list, total)
+else
+    Service -> SiteInformationDao: querySiteUsageById(siteId, materialName, 2.25, 2.25, (pageIndex-1)*pageSize, pageSize)
+    activate SiteInformationDao
+    SiteInformationDao --> Service: list
+    Service -> SiteInformationDao: querySiteUsageByIdCount(siteId, materialName, 2.25, 2.25)
+    SiteInformationDao --> Service: total
+    deactivate SiteInformationDao
+    Service --> Controller: Result("1001", "查询成功", list, total)
+end
+deactivate Service
+Controller --> User: Result
+deactivate Controller
+@enduml

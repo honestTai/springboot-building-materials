@@ -1,0 +1,24 @@
+server:
+  port: 10001
+spring:
+  application:
+    name: user-app
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        service: ${spring.application.name}
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/build?useUnicode=true&characterEncoding=UTF-8&useSSL=false
+    username: build
+    password: CHANGE_ME_BEFORE_RUNNING
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.jdbc.Driver
+mybatis:
+  mapper-locations: classpath:/mapper/*Dao.xml
+  type-aliases-package: com.build.entity
+  configuration:
+    map-underscore-to-camel-case: true
+logging:
+  level: 
+    com.steel: DEBUG

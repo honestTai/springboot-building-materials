@@ -1,0 +1,60 @@
+@startuml
+actor User
+participant Controller
+participant Service
+participant PurchasePlanDao
+participant TokenUtil
+participant QuotePriceDao
+participant Result
+participant UuidTools
+
+User -> Controller: POST /applyPurchase
+activate Controller
+
+Controller -> Service: applyPurchasePlan(token, applyNote, materialId, purchaseQuantity, supplierId)
+activate Service
+
+Service -> TokenUtil: getInfoFromToken(token, "id")
+activate TokenUtil
+TokenUtil --> Service: approvalUserId
+deactivate TokenUtil
+
+Service -> UuidTools: generateShortUuid()
+activate UuidTools
+UuidTools --> Service: purchaseNumber
+deactivate UuidTools
+
+Service -> QuotePriceDao: searchMinPurchase(supplierId, materialId)
+activate QuotePriceDao
+QuotePriceDao --> Service: minLowPurchase
+deactivate QuotePriceDao
+
+alt minLowPurchase > purchaseQuantity
+    Service -> Result: new Result("2001", "该种材料该经销商起购量为"+minLowPurchase)
+    activate Result
+    Result --> Service
+    deactivate Result
+else
+    Service -> PurchasePlanDao: addPurchasePlan(purchasePlan)
+    activate PurchasePlanDao
+    PurchasePlanDao --> Service: insertResult
+    deactivate PurchasePlanDao
+
+    alt insertResult == 1
+        Service -> Result: new Result("1001", "申请采购成功，请等待审核")
+        activate Result
+        Result --> Service
+        deactivate Result
+    else
+        Service -> Result: new Result("2001", "申请失败")
+        activate Result
+        Result --> Service
+        deactivate Result
+    end
+end
+
+Service --> Controller: Result("1001"/"2001", "申请采购成功，请等待审核"/"申请失败"/"该种材料该经销商起购量为"+minLowPurchase)
+deactivate Service
+Controller --> User: Result("1001"/"2001", "申请采购成功，请等待审核"/"申请失败"/"该种材料该经销商起购量为"+minLowPurchase)
+deactivate Controller
+@enduml

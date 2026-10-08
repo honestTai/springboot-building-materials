@@ -1,0 +1,43 @@
+@startuml
+actor User
+participant Controller
+participant Service
+participant ExcleAnalysisTool
+participant MaterialStockDao
+participant QuotePriceDao
+participant Database
+participant Result
+
+User -> Controller: POST /uploadQuotePriceData
+activate Controller
+
+Controller -> Service: importQuotePrice(file)
+activate Service
+
+Service -> ExcleAnalysisTool: readExecleFile(file, supplierList, factoryList)
+activate ExcleAnalysisTool
+
+ExcleAnalysisTool -> MaterialStockDao: checkMaterial(...)
+activate MaterialStockDao
+MaterialStockDao --> ExcleAnalysisTool: count
+deactivate MaterialStockDao
+
+alt count < 1
+    ExcleAnalysisTool -> Result: new Result("2001", "编号、名称、规格、材质不符合")
+    activate Result
+    Result --> ExcleAnalysisTool
+    deactivate Result
+else
+    ExcleAnalysisTool -> QuotePriceDao: updateQuotePrice(...)
+    activate QuotePriceDao
+    QuotePriceDao --> ExcleAnalysisTool: convertC
+    deactivate QuotePriceDao
+    ExcleAnalysisTool --> Service
+    deactivate ExcleAnalysisTool
+end
+
+Service --> Controller: Result("1001", "导入成功") / Result("2001", "导入失败")
+deactivate Service
+Controller --> User: Result("1001", "导入成功") / Result("2001", "导入失败")
+deactivate Controller
+@enduml

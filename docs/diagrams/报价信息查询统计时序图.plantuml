@@ -1,0 +1,60 @@
+@startuml
+actor User
+participant Controller
+participant Service
+participant QuotePriceDao
+participant MonthAndYearDealTools
+participant Linechart
+participant Result
+
+User -> Controller: GET /analysisQuotePrice?materialId=123&startDate=2023-01-01&endDate=2023-12-31
+activate Controller
+
+Controller -> Service: analysisQuotePrice(materialId, startDate, endDate)
+activate Service
+
+Service -> QuotePriceDao: analysisQuotePrice(materialId, startDate, endDate)
+activate QuotePriceDao
+QuotePriceDao --> Service: list
+deactivate QuotePriceDao
+
+Service -> MonthAndYearDealTools: monthAddOne(endDate)
+activate MonthAndYearDealTools
+MonthAndYearDealTools --> Service: updatedEndDate
+deactivate MonthAndYearDealTools
+
+alt list为空
+    Service -> Result: new Result("1001", "查询成功", {})
+    activate Result
+    Result --> Service
+    deactivate Result
+else
+    Service -> MonthAndYearDealTools: monthRangeFromStartDateToEndDate(startDate, endDate)
+    activate MonthAndYearDealTools
+    MonthAndYearDealTools --> Service: xAxisList
+    deactivate MonthAndYearDealTools
+
+    Service -> Service: 构建供应商报价信息映射
+    alt map为空
+        Service -> Result: new Result("1001", "查询成功", {})
+        activate Result
+        Result --> Service
+        deactivate Result
+    else
+        Service -> Linechart: 创建Linechart对象
+        activate Linechart
+        Linechart --> Service
+        deactivate Linechart
+
+        Service -> Result: 返回查询结果
+        activate Result
+        Result --> Service
+        deactivate Result
+    end
+end
+
+Service --> Controller: Result("1001", "查询成功", reMap)
+deactivate Service
+Controller --> User: Result("1001", "查询成功", reMap)
+deactivate Controller
+@enduml

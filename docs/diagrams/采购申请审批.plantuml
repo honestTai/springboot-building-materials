@@ -1,0 +1,54 @@
+@startuml
+actor User
+participant Controller
+participant Service
+participant PurchasePlanDao
+participant TokenUtil
+participant Result
+
+User -> Controller: GET /approvalPurchasePlan
+activate Controller
+
+Controller -> Service: approvalPurchasePlan(token, purchasePlanId, state, approvalNote, dealMoney)
+activate Service
+
+Service -> PurchasePlanDao: queryPurchasePlanById(purchasePlanId)
+activate PurchasePlanDao
+PurchasePlanDao --> Service: oldState
+deactivate PurchasePlanDao
+
+alt oldState != 0
+    Service -> Result: new Result("2001", "该状态不可操作")
+    activate Result
+    Result --> Service
+    deactivate Result
+else
+    Service -> TokenUtil: getInfoFromToken(token, "id")
+    activate TokenUtil
+    TokenUtil --> Service: approvalUserId
+    deactivate TokenUtil
+
+    Service -> PurchasePlanDao: approvalPurchasePlan(approvalUserId, purchasePlanId, state, approvalNote, dealMoney)
+    activate PurchasePlanDao
+    PurchasePlanDao --> Service: insertResult
+    deactivate PurchasePlanDao
+
+    alt insertResult == 1
+        Service -> Result: new Result("1001", "操作成功")
+        activate Result
+        Result --> Service
+        deactivate Result
+    else
+        Service -> Result: new Result("2001", "操作失败")
+        activate Result
+        Result --> Service
+        deactivate Result
+    end
+end
+
+Service --> Controller: Result
+deactivate Service
+
+Controller --> User: Result
+deactivate Controller
+@enduml

@@ -1,0 +1,58 @@
+@startuml
+actor User
+participant Filter
+participant HandlerMethod
+participant TokenUtil
+participant UserService
+participant Database
+participant Result
+participant PrintWriter
+
+User -> Filter: HTTP Request
+activate Filter
+
+Filter -> HandlerMethod: preHandle(request, response, handler)
+activate HandlerMethod
+
+HandlerMethod -> TokenUtil: verify(token)
+activate TokenUtil
+TokenUtil --> HandlerMethod: boolean
+deactivate TokenUtil
+
+alt token不存在
+    HandlerMethod -> PrintWriter: print(Result("3001", "登录已失效，请重新登录"))
+    activate PrintWriter
+    PrintWriter --> HandlerMethod
+    deactivate PrintWriter
+    HandlerMethod --> Filter: false
+else token验证失败 or 用户不存在 or 密码错误
+    HandlerMethod -> PrintWriter: print(Result("3001", "登录已失效，请重新登录"))
+    activate PrintWriter
+    PrintWriter --> HandlerMethod
+    deactivate PrintWriter
+    HandlerMethod --> Filter: false
+else
+    HandlerMethod -> UserService: queryById(userId)
+    activate UserService
+    UserService -> Database: SELECT * FROM User WHERE id = userId
+    activate Database
+    Database --> UserService: User data
+    deactivate Database
+    UserService --> HandlerMethod: user
+    deactivate UserService
+
+    alt 用户不存在
+        HandlerMethod -> PrintWriter: print(Result("3001", "登录已失效，请重新登录"))
+        activate PrintWriter
+        PrintWriter --> HandlerMethod
+        deactivate PrintWriter
+        HandlerMethod --> Filter: false
+    else
+        HandlerMethod -> HandlerMethod: user.getPassword().equals(password)
+        HandlerMethod --> Filter: true/false
+    end
+end
+
+deactivate HandlerMethod
+deactivate Filter
+@enduml
